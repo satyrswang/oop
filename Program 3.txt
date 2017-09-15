@@ -1,0 +1,775 @@
+3.1.2 用户程序自定义类
+
+例：定义电话卡类。
+class PhoneCard
+{
+    long cardNumber;	  			//电话卡卡号
+    private int password;  			//电话卡密码
+    double balance;	  			//电话卡剩余金额
+    String connectNumber; 			//电话卡接入号码
+    boolean connected;				//电话是否接通
+
+    boolean performConnection(long cn,int pw)	//实现接入电话操作
+    {
+        if(cn==cardNumber&&pw==password)
+        {
+            connected=true;
+            return true;
+        }
+        else
+        {
+            connected=false;
+            return false;
+        }
+    }
+    double getBalance()				//电话接通求余额
+    {
+        if(connected)
+            return balance;
+        else
+            return -1;
+    }
+    void performDial()				//接通扣除一次费用
+    {
+        if(connected)
+            balance-=0.5;
+    }
+}
+
+_________________________________________________________
+
+3.1.3 创建对象与定义构造函数
+
+例：使用PhoneCard类的一个完整例子：UsePhoneCard.java
+
+public class UsePhoneCard
+{
+    public static void main(String args[])
+    {
+        PhoneCard myCard = new PhoneCard(20010922,342323,50,"200");
+        System.out.println(myCard.toString());
+    }
+}
+
+class PhoneCard
+{
+    long cardNumber;					//电话卡卡号
+    private int password;				//电话卡密码
+    double balance;					//电话卡剩余金额
+    String connectNumber;				//电话卡接入号码
+    boolean connected;					//电话是否接通
+
+    PhoneCard(long cn, int pw, double b, String s)	//PhoneCard类构造函数
+    {
+        cardNumber = cn;	
+        password = pw;
+        if(b>0)
+            balance = b;
+        else
+            System.exit(1);
+        connectNumber = s;
+        connected = false;
+    }
+
+    boolean performConnection(long cn,int pw)		//实现接入电话操作
+    {
+        if(cn==cardNumber&&pw==password)
+        {
+            connected=true;
+            return true;
+        }
+        else
+        {
+            connected=false;
+            return false;
+        }
+    }	
+
+    double getBalance()					//电话接通求余额
+    {
+        if(connected)
+            return balance;
+        else
+            return -1;
+    }	
+
+    void performDial()					//接通扣除一次费用
+    {
+        if(connected)
+            balance-=0.5;
+    }
+
+    public String toString()				//确定电话卡信息
+    {
+        String s = "电话卡接入号码:"+ connectNumber+
+                        "\n电话卡卡号:"+ cardNumber
+	        +"\n电话卡密码:"+ password
+	        +"\n剩余金额:"+ balance;
+        if(connected)
+            return(s+"\n电话已接通");
+        else
+            return(s+"\n电话未接通"); 
+    }
+}
+
+运行结果：
+电话卡接入号码:200
+电话卡卡号:20010922
+电话卡密码:342323
+剩余金额:50
+电话未接通
+
+_________________________________________________
+
+3.2.1成员变量
+
+1．静态成员变量
+
+例：TestStaticField.java
+public class TestStaticField
+{
+    public static void main(String args[])
+    {
+        PhoneCard200 my200_1 = new PhoneCard200();
+        PhoneCard200 my200_2 = new PhoneCard200();
+        my200_1.additoryFee = 0.1;
+        System.out.println("第二张200卡的附加费:"+my200_2.additoryFee);
+        System.out.println("200卡类的附加费:"+PhoneCard200.additoryFee);
+    }
+}
+
+class PhoneCard200
+{
+    static String connetcNumber = "200";
+    //所有的200电话卡的接入号码都是"200"
+    static double additoryFee;
+    //所有的200电话卡的电话附加费相同
+    long cardNumber;
+    int password;
+    boolean connected;
+    double balance;
+}
+
+运行结果：
+第二张200卡的附加费:0.1
+200卡类的附加费:0.1
+
+_____________________________________________________________
+
+2．静态初始化器
+
+例：TestStatic.java
+public class TestStatic
+{
+    public static void main(String args[])
+    {
+        PhoneCard200 my200_1 = new PhoneCard200();
+        PhoneCard200 my200_2 = new PhoneCard200();
+        System.out.println("第一张200卡的卡号："+my200_1.cardNumber);
+        System.out.println("第二张200卡的卡号："+my200_2.cardNumber);
+    }
+ }
+
+class PhoneCard200
+{
+    static long nextCardNumber;
+    static String connetcNumber = "200";
+    static double additoryFee;
+    long cardNumber;
+    int password;
+    boolean connected;
+    double balance;
+    static
+    {
+        nextCardNumber = 2004122601;
+    }
+
+    PhoneCard200()
+    {
+        cardNumber = nextCardNumber++;
+    }
+}
+
+运行结果：
+第一张200卡的卡号：2004122601
+第二张200卡的卡号：2004122602
+
+________________________________________________________
+
+3.2.2方法
+
+1．抽象方法
+
+例：TestAbstract.java
+public class TestAbstract
+{
+    public static void main(String args[])
+    {
+        PhoneCard200 my200 = new PhoneCard200(50);
+        IC_Card myIC = new IC_Card(50);
+        System.out.println("200卡可拨打:"+my200.TimeLeft()+"次电话");
+        System.out.println("IC卡可拨打:"+myIC.TimeLeft()+"次电话");
+    }
+}
+//抽象类定义
+abstract class PhoneCard
+{
+    double balance;
+    abstract void performDial();	//抽象方法
+    int TimeLeft()	//测试余款还可打几次电话
+    {
+        double current = balance;
+        int times;
+        for(times=0;balance>1e-5;times++)
+            performDial();
+        balance = current;
+        return times;
+    }
+}
+//定义200卡子类         
+class PhoneCard200 extends PhoneCard
+{
+    static long nextCardNumber;
+    static String connetcNumber = "200";
+    static double additoryFee;
+    long cardNumber;
+    int password;
+    boolean connected; 
+    static
+    {
+        nextCardNumber = 2004092301;
+    }
+    PhoneCard200(double b)
+    {
+        cardNumber = nextCardNumber++;
+        balance = b;
+    }
+    void performDial()
+    {
+        balance-=0.5;
+    }
+}
+//定义IC卡子类
+class IC_Card extends PhoneCard
+{
+    IC_Card(double b)
+    {
+        balance =b;
+    }
+    void performDial()
+    {
+        balance-=0.4;
+    }
+}//在子类中实现。
+
+运行结果：
+200卡可拨打:100次电话
+IC卡可拨打:125次电话
+
+_____________________________________________________________
+_____________________________________________________________
+static 在什么时候变化。变化控制的语法。
+
+3.4继承
+
+3.4.1派生子类
+
+1．成员变量的继承
+import java.util.*;
+abstract class PhoneCard
+{
+    double balance;
+    abstract boolean performDial();	//抽象方法
+    double getBalance()		//获取余额
+    {
+        return balance;
+    }
+}
+//定义无卡号电话卡子类 
+abstract class None_Number_PhoneCard extends PhoneCard
+{
+    String phoneSetType;
+    String getSetType()
+    {
+        return phoneSetType;
+    }
+}
+//定义有卡号电话卡子类 
+abstract class Number_PhoneCard extends PhoneCard
+{
+    long cardNumber;
+    int password;
+    String connectNumber;
+    boolean connected;
+    boolean performConnection(long cn,int pw)
+    {
+        if(cn==cardNumber&&pw==password)
+        {
+	         connected=true;
+	         return true;
+        }
+        else
+        {
+	         connected=false;
+	         return false;
+        }
+    }
+}
+//定义磁卡子类
+class MagCard extends None_Number_PhoneCard
+{
+    String usefulArea;//磁卡使用区域
+    boolean performDial()
+    {
+        if(balance>0.4)
+        {
+            balance-=0.4;
+            return true;
+        }
+        else
+            return false;
+    }
+}
+//定义IC卡子类
+class IC_Card extends None_Number_PhoneCard
+{
+    boolean performDial()
+    {
+        if(balance>0.4)
+        {
+            balance-=0.4;
+            return true;
+        }
+        else
+            return false;
+    }
+}
+//定义IP卡子类
+class IP_Card extends Number_PhoneCard
+{
+    Date expireDate;  
+    boolean performDial()
+    {
+        if(balance>0.3&&expireDate.after(new Date()))
+        //new Date()返回当前日期;
+	//expireDate.after(new Date()):失效日期比当前日期晚返回true，否则返回false
+        {
+            balance-=0.4;
+            return true;
+        }
+        else
+            return false;
+    }
+}
+//定义200电话卡子类
+class P200_Card extends Number_PhoneCard
+{
+    double additoryFee;
+    boolean performDial()
+    {
+        if(balance>(0.3+additoryFee))
+        {
+            balance-=(0.3+additoryFee);
+            return true;
+        }
+        else
+            return false;
+    }
+}
+
+________________________________________________________
+//子类设定的成员变量赋值--覆盖了父类，如何获取父类的成员变量。
+2．成员变量的隐藏
+
+例：TestHiddenField.java
+ 
+public class TestHiddenField
+{
+    public static void main(String args[])
+    {
+        P200_Card my200 = new P200_Card();
+        my200.balance = 50;
+        System.out.println("父类被隐藏的金额为:"+my200.getBalance());
+        //父类的方法操纵父类定义的成员变量
+        if(my200.performDial())
+        System.out.println("子类的剩余金额为:"+my200.balance);
+    }
+}
+abstract class PhoneCard
+{
+    double balance;
+    abstract boolean performDial();	//抽象方法
+    double getBalance()		//获取余额
+    {
+        return balance;
+    }
+}
+//定义有卡号电话卡子类 
+abstract class Number_PhoneCard extends PhoneCard
+{
+    long cardNumber;
+    int password;
+    String connectNumber;
+    boolean connected;
+    boolean performConnection(long cn,int pw)
+    {
+        if(cn==cardNumber&&pw==password)
+        {
+            connected=true;
+            return true;
+        }
+        else
+        {
+            connected=false;
+            return false;
+        }
+    }
+}
+//定义200电话卡子类
+class P200_Card extends Number_PhoneCard
+{
+    double additoryFee;
+    double balance;
+    boolean performDial()
+    {
+        if(balance>(0.3+additoryFee))
+        {
+            balance-=(0.3+additoryFee);
+            return true;
+        }
+        else
+            return false;
+    }
+}
+
+运行结果：
+父类被隐藏的金额为:0.0
+子类的剩余金额为:49.7
+
+_________________________________________________________
+
+3.4.3 null、this与super
+
+2．this
+例：
+class HsbColor
+{
+    int hue,saturation,brightness;
+    HsbColor (int hue, int saturation, int brightness)
+    {
+        this.hue            = hue;	         //色调
+        this.saturation = saturation;	         //饱和度
+        this.brightness = brightness;	         //明亮
+    }
+}
+
+________________________________________________________
+
+3．super
+
+例如：
+//父类
+class SuperClassName
+{
+    int x;
+    SuperClassName()	//构造函数
+    {
+        x=3;
+        System.out.println("In SuperClass : x = "+x);
+    }
+    void doSomething()
+    {
+        System.out.println("In SuperClass.doSomething()");
+    }
+}
+//子类
+class SubClass extends SuperClassName
+{
+    int x;
+    SubClass() //构造函数
+    {
+        super();  //父类构造函数
+        x=5;
+        System.out.println("In SubClass : x = "+x);
+    }
+    void doSomething()
+    {
+        super.doSomething();
+        System.out.println("In SubClass.doSomething()");
+        System.out.println("Super.x="+super.x+" Sub.x="+x);
+    }
+}
+public class Inheritance
+{
+    public static void main(String args[])
+    {
+        SubClass subC = new SubClass();
+        subC.doSomething();
+    }
+}
+
+运行程序：java Inheritance
+执行的结果为：
+In SuperClass :  x = 3
+In SubClass   :  x = 5
+In SuperClass.doSomething()
+In SubClass.doSomething()
+Super.x=3 sub.x=5
+
+________________________________________________________
+
+3.5.1方法的继承
+
+父类的非私有方法可以被子类继承。
+以PhoneCard类及其子类为例来说明：
+
+ PhoneCard类：
+   abstract boolean performDial();
+   double getBalance();
+ None_Number_PhoneCard类：
+   abstract boolean performDial();//继承自父类PhoneCard
+   double getBalance();           //继承自父类PhoneCard
+ Number_PhoneCard类：
+   abstract boolean performDial();//继承自父类PhoneCard
+   double getBalance();           //继承自父类PhoneCard
+   boolean performConnection(long cn, int pw)
+ MagCard类：
+   double getBalance;	//继承自父类None_Number_PhoneCard
+   String getSetType;	//继承自父类None_Number_PhoneCard
+   boolean performDial()
+ IC_Card类：
+   double getBalance;	//继承自父类None_Number_PhoneCard
+   String getSetType;	//继承自父类 None_Number_PhoneCard
+   boolean performDial()
+ IP_Card类：
+   double getBalance;	//继承自父类Number_PhoneCard
+   boolean performConnection(long cn, int pw) 
+   //继承自父类 Number_PhoneCard
+   boolean performDial()
+ P200_Card类：
+   double getBalance;	//继承自父类Number_PhoneCard
+   boolean performConnection(long cn, int pw) 
+   //继承自父类 Number_PhoneCard
+   boolean performDial()
+
+________________________________________________________
+
+3.5.3 重载
+
+例：TestOverride.java
+public class TestOverride
+{
+    public static void main(String args[])
+    {
+        P200_Card my200 = new P200_Card(2004101601,135790,50);
+        if(my200.performDial(2004101601,135790))
+            System.out.println("拨打电话后剩余金额为:"+my200.getBalance());
+        if(my200.performDial())
+            System.out.println("拨打电话后剩余金额为:"+my200.balance);
+    }
+}
+//定义父类
+abstract class PhoneCard
+{
+    double balance;
+    abstract boolean performDial();	//抽象方法
+    double getBalance()		//获取余额
+    {
+        return balance;
+    }
+}
+//定义有卡号电话卡子类 
+abstract class Number_PhoneCard extends PhoneCard
+{
+    long cardNumber;
+    int password;
+    String connectNumber;
+    boolean connected;
+    boolean performConnection(long cn,int pw)
+    {
+        if(cn==cardNumber&&pw==password)
+        {
+            connected=true;
+            return true;
+        }
+        else
+        {
+            connected=false;
+            return false;
+        }
+    }
+}
+//定义200电话卡子类
+class P200_Card extends Number_PhoneCard
+{
+    double additoryFee=0.1;
+    P200_Card(long cn,int pw,double b) //构造函数
+    {
+        cardNumber = cn;
+        password = pw;
+        balance = b;
+    }
+    boolean performDial()     //方法的重载
+    {
+        if(balance>(0.3+additoryFee))
+        {
+            balance-=(0.3+additoryFee);
+            return true;
+        }
+        else
+            return false;
+    }
+    boolean performDial(long cn,int pass) //方法的重载
+    {
+        if(performConnection(cn,pass))
+            return performDial();
+        else
+            return false;
+    }
+    double getBalance()	//对父类方法的覆盖
+    {
+        if(connected)
+            return balance;
+        else
+            return -1;
+    }
+}
+
+运行结果：
+拨打电话后剩余金额为:49.6
+拨打电话后剩余金额为:49.2
+
+_________________________________________________________
+
+3.5.4 构造函数的继承与重载
+
+例：
+Number_PhoneCard()
+{
+}
+Number_PhoneCard(long cn)
+{
+    cardNumber = cn;
+}
+Number_PhoneCard(long cn,int pw)
+{
+    cardNumber = cn;
+    password = pw;
+}
+Number_PhoneCard(long cn,int pw,double b)
+{
+    this(cn,pw);
+    balance = b
+}
+
+
+P200_Card(long cn,int pw,double b,double a)
+{
+    super(cn,pw,b);
+    additoryFee = a;
+}
+
+_________________________________________________________
+3.6 上转型对象
+
+例子：
+class ZhuanXing 
+{
+    public static void main(String args[])
+    {
+        Anthropoid mon=new Monkey();     //mon是上转型对象
+        mon.crySpeak("I love apple.");
+        Anthropoid ant=new Anthropoid(); //ant是父类对象
+        ant.crySpeak("I love apple.");
+        Monkey mon1=new Monkey();       //mon1是子类对象
+        mon1.crySpeak("I love apple.");
+        mon1.computer(8,10);
+    }//end of main method
+}//edn of class
+class Anthropoid
+{
+    private int n=100;
+    void crySpeak(String s)
+    {
+        System.out.println(s);
+    }
+}
+class Monkey extends Anthropoid
+{
+    void computer(int a,int b)
+    {
+        int c=a*b;
+        System.out.println(c);
+    }
+    void crySpeak(String s)
+    {
+        System.out.println("**"+s+"**");
+    }
+}
+
+
+注意：
+mon.computer(8,10);//不合法，因为computer是子类新增的方法。
+
+_________________________________________________________
+
+3.7.2 接口的实现
+
+下面在类FIFOQueue中实现上述所定义的接口：
+class FIFOQueue implements collection 
+{
+    public void add (Object objAdd)
+    {
+        ...
+    }
+    public void delete (Object objDelet)
+    {
+        ...
+    }
+    public Object find (Object objFind)
+    {
+        ...
+    }
+    public int currentCount()
+    {
+        ...
+    }
+}
+
+______________________________________________________
+
+3.7.3 接口的回调
+例子：
+class HuiDiao 
+{
+    public static void main(String args[])
+    {
+        ShowBrand sb;        //接口变量
+        sb=new TV();
+        sb.show("ChangHong TV");
+        sb=new PC();
+        sb.show("IBM PC");
+    }//end of main method
+}//edn of class
+interface ShowBrand
+{
+    void show(String s);
+}
+class TV implements ShowBrand
+{
+    public void show(String s)
+    {
+        System.out.println("*"+s);
+    }
+}
+class PC implements ShowBrand
+{
+    public void show(String s)
+    {
+        System.out.println("#"+s);
+    }
+}
+
+运行结果：
+*ChangHong TV
+#IBM PC

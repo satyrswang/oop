@@ -1,0 +1,176 @@
+4 异常处理
+
+4.1 Java异常处理的特点
+
+1．隔离错误处理代码和常规代码
+
+例子：下面我们用伪代码描述一个读文件的函数。
+ readFile
+ {
+    open the file;
+    determine its size;
+    allocate memory;
+    read file into memory;
+    close the file;
+ }
+  
+    这个函数看来简单，但它忽略了以下的潜在错误：
+    文件不能打开；
+    文件长度不能确定；
+    没有分配足够的内存；
+    读失败；
+    文件关闭失败。
+    
+    若要解决这些问题，函数中必须添加许多代码来做错误检测、报错和错误处理。
+ readFile
+ {
+    initialize errorCode = 0;
+    open the file;
+    if(the file open)
+    {
+       determine its size;
+       if(got the file length)
+       {
+          allocate memory;
+          if(got Enough memory)
+          {
+             read file into memory;
+             if(read failed)
+                errorCode = 4;//读失败
+          }
+          else 
+             errorCode = 3;//内存分配失败
+       }
+       else
+          errorCode = 2;// 文件长度不能确定
+    }
+    else
+        errorCode = 1;// 文件不能打开
+    close the file;
+    if(the file did not close && errorCode = 0)
+       errorCode = 5 //文件关闭失败
+    return erroCode;
+ }
+
+    增加了错误处理之后，使原先的代码变得很复杂，而Java的异常处理就可解决该问题。
+
+ readFile
+ {
+    try
+    {
+       open the file;
+       determine its size;
+       allocate memory;
+       read file into memory;
+       close the file;
+    }
+    catch(file open failed)
+    {
+       dosomething;
+    }
+    catch(size determination failed)
+    {
+       dosomething;
+    }
+    catch(memory allocation failed)
+    {
+       dosomething;
+    }
+    catch(read failed)
+    {
+       dosomething;
+    }
+ }
+    
+    用户不需在主程序中检测和处理错误，异常处理提供了一种当错误发生时分离所有处理细节和原有代码的方法。
+
+_________________________________________________
+
+2．在调用栈中传播错误
+
+    假设上例的readFile方法是从主程序的第四级调用的，即由method1调用method2、由method2调用method3、再由method3调用readFile。
+ method1
+ {
+    call method2;
+ }
+ method2
+ {
+    call method3;
+ }
+ method3
+ {
+    readFile;
+ }
+    近一步假设，只有method1对readFile中的错误感兴趣。传统的错误检测技术需要调用栈中的方法method2和方法method3辅助错误代码的传播，readFile返回的错误才能最终到达method1方法。其程序如下：
+ method1
+ {
+    errorCodeType error;
+    error = call method2;
+    if(error)
+        doErrorProcessing;
+    else
+        proceed;
+ }
+ errorCodeType method2
+ {
+    errorCodeType error;
+    error = call method3;
+    if(error)
+        return Error;
+    else
+        proceed;
+ }
+ errorCodeType method3
+ {
+    errorCodeType error;
+    error = call readFile;
+    if(error)
+        return Error;
+    else
+        proceed;
+ }
+    这样在调用栈中的所有方法都需编写错误处理代码。而Java的异常具有在方法调用栈中传播错误的功能，即可以向调用栈的上层方法传递异常，可以让调用栈的更上层的方法来捕获异常，做到只让关心错误的方法捕获它。
+ method1
+ {
+    try
+    {
+       call method2;
+    }
+    catch
+    {
+       do error processing;
+    }
+ }
+ method2 throws exception
+ {
+    call method3;
+ }
+ method3 throws exception
+ {
+    call readFile;
+ }
+    中间代码的工作就是抛出（throw）异常。
+
+__________________________________________________
+
+
+4.4 异常处理
+
+ 最基本的异常处理结构形式如下：
+ try 
+ {
+    正常程序段;
+ }
+ catch(异常类1  异常变量) 
+ {
+    与异常类1有关的处理程序段;
+ }
+ catch(异常类2  异常变量) 
+ {
+    与异常类2有关的处理程序段;
+ }
+ .....
+ finally 
+ {
+    退出异常处理程序段;
+ }

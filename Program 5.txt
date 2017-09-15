@@ -1,0 +1,230 @@
+5.1 数组
+
+例1：初始化数组元素为对象的数组。
+P200_Card的构造函数为：
+P200_Card（long cn,int pw,double b,double a）
+{
+    cardNumber = cn;
+    password = pw;
+    balance = b;
+    additorFee = a;
+}
+
+可用专门的语句来完成初始化工作：
+P200_Card[] Array200Card = new P200_Card[10];
+for(int i=0; i< Array200Card.length; i++)
+{
+    Array200Card[i] = new P200_Card(20011019000+i,1234,50,0.1);
+}
+
+___________________________________
+
+例2：给数组赋值后，再将其打印出来。
+public class ArrayRefer
+{
+    public static void main(String args[])
+    {
+        int i;
+        int arrayA[] = new int [5];
+        for (i=0; i<5; i++)
+            arrayA[i] = i;
+        for (i=0; i<arrayA.length; i++)
+            System.out.println("arrayA[" + i + "] = " + arrayA[i]);
+    }
+}
+   
+运行结果：
+arrayA[0] = 0
+arrayA[1] = 1
+arrayA[2] = 2
+arrayA[3] = 3
+arrayA[4] = 4
+
+_________________________
+
+例3: 求Fibonacci数列。可表达为：F[1]=F[2]=1，F[n]=F[n-1]+F[n-2]，其中，n>=3。
+public class Fibonacci
+{
+    public static void main(String args[])
+    {
+        int i;
+        int[]  Fib = new int [10];
+        //int Fib[] = new int [10];
+        Fib[0]=1;
+        Fib[1]=1;
+        for(i=2; i<10; i++)
+            Fib[i]=Fib[i-1]+Fib[i-2];
+        for(i=1; i<=Fib.length; i++)
+            System.out.println("Fib["+i+"] = "+Fib[i-1]);
+    }
+}
+
+结果为：
+Fib[1] = 1
+Fib[2] = 1
+Fib[3] = 2
+Fib[4] = 3
+Fib[5] = 5
+Fib[6] = 8
+Fib[7] = 13
+Fib[8] = 21
+Fib[9] = 34
+Fib[10] = 55
+
+_________________________________________
+
+5.2 字符串
+
+例子：
+public class TestString
+{
+    public static void main(String args[])
+    {
+        String s1 = "Hello! ";
+        String s2 = "hello! ";
+        boolean b1 = s1.equals(s2);
+        boolean b2 = s1.equalsIgnoreCase(s2);
+        System.out.println(b1);
+        System.out.println(b2);
+        String s = "abc",s3 = "aab",s4 = "abd",s5 = "abc";
+        int i,j,k;
+        i = s.compareTo(s3);
+        j = s.compareTo(s4);
+        k = s.compareTo(s5);
+        System.out.println(i);
+        System.out.println(j);
+        System.out.println(k);
+    }
+}
+
+运行结果：
+false
+true
+1
+-1
+0
+
+____________________________
+
+5.2.3 Java Application命令行参数
+
+例子：
+public class UsePara
+{
+    public static void main(String args[])
+    {   
+        int a0,a1,a2;
+        if(args.length<2)
+        {
+            System.out.println("运行本程序应提供两个命令行参数");
+            System.exit(0);
+        }
+        a0 = Integer.parseInt(args[0]);
+        a1 = Integer.parseInt(args[1]);
+        //Integer数据类型类的parseInt方法把字符串型转换为整型数
+        a2 = a0 * a1;
+        System.out.println(a0+"*"+a1+"="+a2);
+    }
+}
+
+运行程序：java UsePara 26 16
+运行结果：
+26*16=416
+________________________________________________
+________________________________________________
+
+5.4例子
+
+import java.awt.*;
+import java.applet.*;
+public class LifeCycle extends Applet
+{
+    private int initCount;
+    private int startCount;
+    private int stopCount;
+    private int destroyCount;
+    private int paintCount;
+    public LifeCycle()
+    {
+        initCount=0;
+        startCount=0;
+        stopCount=0;
+        destroyCount=0;
+        paintCount=0;
+    }
+    public void init()
+    {
+        initCount++;
+    }
+    public void destroy()
+    {
+        destroyCount++;
+    }
+    public void start()
+    {
+        startCount++;
+    }
+    public void stop()
+    {
+        stopCount++;
+    }
+    public void paint(Graphics g)
+    {
+        paintCount++;
+        g.drawLine(20,200,300,200);//横坐标
+        g.drawLine(20,200,20,20);//纵坐标
+        g.drawLine(20,170,15,170);//标尺
+        g.drawLine(20,140,15,140);
+        g.drawLine(20,110,15,110);
+        g.drawLine(20,80,15,80);
+        g.drawLine(20,50,15,50);
+        g.drawString("init()",25,213);
+        g.drawString("start()",75,213);
+        g.drawString("stop()",125,213);
+        g.drawString("destroy()",175,213);
+        g.drawString("paint()",225,213);
+        g.fillRect(25,200-initCount*30,40,initCount*30);  
+        g.fillRect(75,200-startCount*30,40,startCount*30);  
+        g.fillRect(125,200-stopCount*30,40,stopCount*30);  
+        g.fillRect(175,200-destroyCount*30,40,destroyCount*30);  
+        g.fillRect(225,200-paintCount*30,40,paintCount*30);  
+    }
+}
+
+life.html文件：
+<HTML>
+<HEAD>
+<TITLE>图形用户界面 </TITLE>
+</HEAD>
+<BODY>
+<APPLET CODE="LifeCycle.class"  WIDTH=500 HEIGHT=500>
+</APPLET>
+</BODY>
+</HTML> 
+
+————————————————————————————
+
+从HTML文件中参数传递
+
+import java.awt.*;
+import java.applet.*;
+public class MyAppletParam extends Applet
+{
+    private String s="";
+    private int x;
+    private int y;
+    public void init()
+    {
+        s=getParameter("vstring");
+        x=Integer.parseInt(getParameter("x"));
+        y=Integer.parseInt(getParameter("y"));
+    }
+    public void paint(Graphics g)
+    {
+        if(s!=null)
+        g.drawString(s,x,y);
+    }
+}
+
+_______________________________________________
+_______________________________________________

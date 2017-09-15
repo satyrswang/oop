@@ -1,0 +1,1326 @@
+6.1 Java多线程机制
+    
+6.1.1基本概念
+
+线程控制方法
+
+public class Thread implements Runnable 
+{
+    public final static int MIN_PRIORITY;
+    public final static int NORM_PRIORITY;
+    public final static int MAX_PRIORITY;
+
+    public Thread();
+    public Thread(Runnable target);
+    public Thread(ThreadGroup group, Runnable target);
+    public Thread(String name);
+    public Thread(ThreadGroup group, String name);
+    public Thread(Runnable target, String name);
+    public Thread(ThreadGroup group, Runnable target, String name);
+
+    public void run();
+    public synchronized native void start();
+    public final void stop();
+    public final synchronized void stop(Throwable o);
+    public static native void yield();
+    public static native void sleep(long millis) throws InterruptedException;
+    public static void sleep(long millis, int nanos) throws InterruptedException
+    public final void suspend();
+    public final void resume();
+    public final synchronized void join(long millis) throws InterruptedException;
+    public final synchronized void join(long millis, int nanos)throws InterruptedException;
+    public final void join() throws InterruptedException;
+    public void interrupt();
+    public static boolean interrupted();
+    public boolean isInterrupted();
+    public void destroy();
+    public final native boolean isAlive();
+    public final void setPriority(int newPriority);
+    public final int getPriority();
+    public final void setName(String name);
+    public final String getName();
+    public final ThreadGroup getThreadGroup();
+    public static native Thread currentThread();
+    public static int activeCount();
+    public static int enumerate(Thread tarray[]);
+    public native int countStackFrames();
+    public static void dumpStack();
+    public final void setDaemon(boolean on);
+    public final boolean isDaemon();
+    public void checkAccess();
+    public String toString();
+}
+
+____________________________________________________________
+
+6.1.2多线程实现方法 
+
+ 例1：下面程序演示如何用生成Thread子类的方法来创建新线程。
+//ThreadTest1.java
+public class ThreadTest1 
+{
+    ThreadTest1() 
+    {
+        FirstThread first = new FirstThread();
+        SecondThread second = new SecondThread();
+        first.start();
+        second.start();
+    }
+    public static void main(String[] args) 
+    {
+        new ThreadTest1();
+    }
+}
+
+class FirstThread extends Thread 
+{
+    public void run() 
+    {
+        try 
+        {
+            System.out.println("First thread starts running.");
+            for(int i=0; i<10; i++) 
+            { 
+                System.out.println("First " + i);
+                sleep(1000);
+            }
+           System.out.println("First thread finishes running."); 
+        } 
+        catch (InterruptedException e) {} 
+    }
+} 
+
+class SecondThread extends Thread 
+{
+    public void run() 
+    {
+        try 
+        {
+            System.out.println("\tSecond thread starts running.");
+            for(int i=0; i<10; i++) 
+            {
+                System.out.println("\tSecond " + i);
+                sleep(1000);
+            }
+            System.out.println("\tSecond thread finishes running.");
+        } 
+        catch (InterruptedException e) {} 
+    }
+} 
+
+程序设计了两个线程FirstThread类和SecondThread类，它们都是Thread类 的子类覆盖了run()方法，在其中分别进行打印数值的工作。
+除了这两个线程 外，还有一个线程在执行，就是启动类线程，称它为主线程，它负责生成另外 两个线程，再用start()方法启动这两个线程。
+线程first和second启动后，并发执行。观察执行结果会发现两个线程交替打印数据，而不是一个线程完成了所有打印工作后，另一个线程才开始打印工作，这就是多线程的本质。 
+提示：线程在调用Thread类方法sleep()睡眠时，有可能产生异常，要求 应用程序用try-catch捕获这个异常，如果不用try-catch，程序将出错。 
+
+某次的运行结果：
+First thread finishes running.
+First 0
+	Second thread starts running.
+	Second 0
+	Second 1
+First 1
+First 2
+	Second 2
+First 3
+	Second 3
+First 4
+	Second 4
+	Second 5
+First 5
+First 6
+	Second 6
+First 7
+	Second 7
+First 8
+	Second 8
+First 9
+	Second 9
+First thread finishes running.
+	Second thread finishes
+
+
+________________________________________________
+
+  例2：下面程序演示如何用生成Thread子类的方法来创建新线程。
+
+//ThreadTest2.java
+public class ThreadTest2 
+{ 
+    ThreadTest2() 
+    { 
+        FirstThread first = new FirstThread(); 
+        SecondThread second = new SecondThread();
+        first.start(); 
+        second.start();
+        try 
+        { 
+            first.join();
+            System.out.println("Waiting for first thread to finish..."); 
+            System.out.println("Waking up second thread...");
+            second.resume();
+        } 
+        catch (InterruptedException e) {}
+    }
+    public static void main(String[] args) 
+    {
+        new ThreadTest2();
+    }
+}
+
+class FirstThread extends Thread 
+{
+    public void run() 
+    {
+        try 
+        {
+            System.out.println("First thread STARTS running.");
+            for(int i=0; i<10; i++) 
+            { 
+               System.out.println("First " + i); 
+               sleep(1000); 
+            } 
+            System.out.println("First thread FINISHES running.");
+        } 
+        catch (InterruptedException e) {} 
+    }
+} 
+
+class SecondThread extends Thread 
+{
+    public void run() 
+    {
+        try 
+        { 
+            System.out.println("\tSecond thread STARTS running."); 
+            for(int i=0; i<10; i++) 
+            {
+                if(i== 4) 
+                    suspend();
+                System.out.println("\tSecond " + i);
+                sleep(1000);
+            }
+            System.out.println("\tSecond thread FINISHES running.");
+        } 
+        catch (InterruptedException e) {}
+    }
+}
+
+程序仍然使用两个线程打印数据，不同的是second线程在打印数据过程中，发现是数值4，则调用suspend()方法，暂停本身的执行。
+主线程用join()方法等线程first执行结束后，用resume()方法来唤醒second线程，second线程被唤醒后，将继续完成打印工作。
+提示：join()也将出现InterruptedException异常，所以必须捕获异常。
+
+某次的运行结果：
+First thread STARTS running.
+First 0
+	Second thread STARTS running.
+	Second 0
+First 1
+	Second 1
+First 2
+	Second 2
+First 3
+	Second 3
+First 4
+First 5
+First 6
+First 7
+First 8
+First 9
+First thread FINISHES running.
+Waiting for first thread to finish...
+Waking up second thread...
+	Second 4
+	Second 5
+	Second 6
+	Second 7
+	Second 8
+	Second 9
+	Second FINISHES finishes
+
+____________________________________________________________
+
+
+例3：下面的程序说明如何用接口来创建线程。
+ 
+ //RunTest.java
+public class RunTest 
+{
+    RunTest() 
+    {
+        FirstThread first = new FirstThread();
+        SecondThread second = new SecondThread();
+        Thread thread1 = new Thread(first);
+        Thread thread2 = new Thread(second);
+        thread1.start();
+        thread2.start();
+    }
+    public static void main(String[] args) 
+    {
+        new RunTest();
+    }
+}
+
+class FirstThread implements Runnable 
+{
+    public void run() 
+    {
+        try 
+        {
+            System.out.println("First thread starts running.");
+            for(int i=0; i<10; i++) 
+            { 
+                System.out.println("First " + i);
+                Thread.sleep(1000);
+            }
+            System.out.println("First thread finishes running."); 
+        } 
+        catch (InterruptedException e) {} 
+    }
+}        
+
+class SecondThread implements Runnable 
+{
+    public void run() 
+    {
+        try 
+        {
+            System.out.println("\tSecond thread starts running.");
+            for(int i=0; i<10; i++) 
+            {
+                System.out.println("\tSecond " + i);
+                Thread.sleep(1000);
+            }
+            System.out.println("\tSecond thread finishes running.");
+        } 
+        catch (InterruptedException e) {} 
+    }
+} 
+
+    这个程序与ThreadTest1.java有相同的功能，只不过现在用实现Runnable接口的方法来创建和执行线程。
+   
+
+______________________________________________
+_____________________________________________
+
+
+6.2 输入输出流类
+
+6.2.1文件系统
+
+1．文件路径和属性
+
+例子：下面的程序首先判断给定文件是否存在，如果存在则显示文件路径、绝对路径等，然后再查询文件的属性。
+ 
+//FileTest1.java
+import java.io.*;
+class FileTest1 
+{
+    public static void main(String[] args) 
+    {
+        String path;
+        if(args.length != 1) 
+        {
+            System.err.println("Usage: java FileTest1 File or Dir");
+            System.exit(-1);
+        }
+        File f = new File(args[0]);
+        if (f.exists()) 
+        {
+            System.out.println("----------------------------- ");
+            System.out.println("Absolute Path:     " + f.getAbsolutePath());
+            System.out.println("File Path:              " + f.getPath());
+            System.out.println("File Name:            " + f.getName());
+            System.out.println("Parent Dirtory:    " + f.getParent());
+            System.out.println("----------------------------- ");
+            String canRead = f.canRead()   ? "Yes" : "No";
+            String canWrite = f.canWrite() ? "Yes" : "No";
+            String isFile = f.isFile()     ? "Yes" : "No";
+            String isDir = f.isDirectory() ? "Yes" : "No";
+            String isAbs = f.isAbsolute()  ? "Yes" : "No";
+            System.out.println("Readable:            "+canRead);
+            System.out.println("Writable:             "+canWrite);
+            System.out.println("Is directoty:         "+isDir);
+            System.out.println("Is file:                   "+isFile);
+            System.out.println("Is absolute path:  "+isAbs);
+        }
+        else System.out.println("Cannot found file: " + args[0]);
+    }
+}
+
+这是一个Application程序，用命令行参数接受输入文件名。读者可以用不同的命令行参数来执行上面的程序，体会上述方法的区别。
+
+运行：java FileTest1 d:\java\filetest1
+运行结果：
+----------------------------- 
+Absolute Path:   d:\java\filetest1 
+File Path:           d:\java\filetest1
+File Name:         filetest1
+Parent Dirtory:   d:\java
+-----------------------------
+Readable:        Yes 
+Writable:          Yes
+Is directoty:      Yes
+Is file:               No
+Is absolute path:Yes
+
+—————
+运行：java FileTest1 \java\filetest1
+运行结果：
+----------------------------- 
+Absolute Path:   d:\java\filetest1 
+File Path:           \java\filetest1
+File Name:         filetest1
+Parent Dirtory:   \java
+-----------------------------
+Readable:        Yes 
+Writable:          Yes
+Is directoty:      Yes
+Is file:               No
+Is absolute path:No
+
+—————
+运行：  java FileTest1 \java\filetest1\filetest1.java
+运行结果：
+----------------------------- 
+Absolute Path:   d:\java\filetest1\filetest1.java 
+File Path:           \java\filetest1\filetest1.java
+File Name:         filetest1.java
+Parent Dirtory:   \java\filetest1
+-----------------------------
+Readable:        Yes 
+Writable:          Yes
+Is directoty:      No
+Is file:               Yes
+Is absolute path:No
+
+—————
+运行：java FileTest1 \java
+运行结果：
+----------------------------- 
+Absolute Path:   d:\java
+File Path:           \java
+File Name:         java
+Parent Dirtory:   \
+-----------------------------
+Readable:        Yes 
+Writable:          Yes
+Is directoty:      Yes
+Is file:               No
+Is absolute path:No
+
+—————
+运行：java FileTest1 \java
+运行结果：
+----------------------------- 
+Absolute Path:   d:\
+File Path:           \
+File Name:       
+Parent Dirtory:   null
+-----------------------------
+Readable:        Yes 
+Writable:          Yes
+Is directoty:      Yes
+Is file:               No
+Is absolute path:No
+
+
+————————————————————————————
+————————————————————————————
+
+2．创建目录和删除文件
+
+例2：
+//FileTest2.java
+import java.io.*;
+class FileTest2 
+{
+    public static void main(String[] args) 
+    {
+        File dir, subdir;
+        if(args.length != 1) 
+        {
+            System.err.println("Usage: java FileTest2 <newDirPath>");
+            System.exit(-1);
+        }
+        dir = new File(args[0]);
+        if(dir.exists()) 
+            System.out.println(dir.getPath() + " already exist!");
+        else 
+        {    
+            if(dir.mkdirs()) //说明区别
+            {
+                System.out.println("Created directory:    " + dir.getAbsolutePath());
+                subdir = new File(dir, "newSub");
+                if (subdir.mkdir()) 
+                {
+                    System.out.println("Created subdirectory: " + subdir.getAbsolutePath());
+                    subdir.delete();  //删除才创建的目录
+                }
+                else
+                    System.out.println("Could not create subdirectory " + subdir.getAbsolutePath());
+                dir.delete();
+            } 
+            else 
+                System.out.println("Could not create directory " +    dir.getAbsolutePath());
+        }
+    }
+}
+ 
+————————————————————————————
+————————————————————————————
+
+3．文件更名
+
+//FileRename.java
+import java.io.*;
+class FileRename 
+{
+    public static void main(String[] args) 
+    {
+        String message;
+        if (args.length != 2) 
+        {
+            System.err.println("Usage: java FileRename <file1> <file2>");
+            System.exit(-1);
+        }
+        File f1 = new File(args[0]);
+        File f2 = new File(args[1]);
+        if (f1.equals(f2)) 
+        {
+            System.err.println("Cannot rename a file to itself");
+            System.exit(-1);
+        }
+        message = f1.renameTo(f2) ? " renamed to " : " could not be renamed to ";
+        System.out.println(f1.getPath() + message + f2.getPath());
+    }
+}
+
+————————————————————————
+————————————————————————
+
+4．目录清单
+
+//FileDir.java
+import java.io.File;
+import java.util.Date;
+class FileDir 
+{
+    public static void main(String[] args) 
+    {
+        if (args.length != 1) 
+        {
+            System.err.println("Usage: java FileDir filepath");
+            System.exit(-1);
+        }
+        File f = new File(args[0]);
+        String[] ls = f.list();
+        for (int i = 0; ls != null && i <ls.length; i++) 
+            printOne(new File(f, ls[i])); 
+    } 
+    public static void printOne(File f) 
+    { 
+        if (f.exists()) 
+        {
+            System.out.print(f.canRead() ? "r" : "-");
+            System.out.print(f.canWrite() ? "w" : "-"); 
+            System.out.print(f.isDirectory() ? "d" : "-"); 
+            if(!f.isDirectory()) 
+                System.out.print("\t\t" + f.length()); 
+            else 
+                System.out.print("\t<Dir>\t");
+            System.out.print('\t');
+            System.out.print(new Date(f.lastModified()));
+            System.out.print('\t');
+        } 
+        else 
+        {
+            System.out.print("\t\t\t\t\t");
+        }
+            System.out.println(f.getName());
+    }
+}
+
+
+运行：java FileDir \java\filetestc
+运行结果：
+rw-        1130    Tue Oct 26 16:30:23 CST 2001  FileTest.java
+rw-        1492    Tue Oct 26 16:30:30 CST 2001  FileTest.class
+
+运行：java FileDir \java\
+运行结果：
+rwd   <dir>          Tue Oct 26 16:34:33 CST 2001  Computer
+rw-          1203    Tue Oct 26 16:30:23 CST 2001  Hello.java
+rw-          1345    Tue Oct 26 16:30:30 CST 2001  Hello.class
+rwd   <dir>          Tue Oct 26 16:30:23 CST 2001  UsePhoneCard
+rwd   <dir>          Tue Oct 26 16:30:23 CST 2001  MultiPara
+
+——————————————————————————————
+——————————————————————————————
+
+6.2.2读写文件
+
+RandomAccessFile类，它的定义如下：
+public class RandomAccessFile implements DataOutput, DataInput 
+{
+    public RandomAccessFile(String name, String mode) throws IOException;
+    public RandomAccessFile(File file, String mode) throws IOException;
+
+    //misc methods
+    public final FileDescriptor getFD() throws IOException;
+    public long getFilePointer() throws IOException;
+    public void seek(long pos) throws IOException;
+    public long length() throws IOException;
+    public void close() throws IOException;
+
+    public int read() throws IOException;
+    public int read(byte b[], int off, int len) throws IOException;
+    public int read(byte b[]) throws IOException;
+
+    //DataInput interface
+    public final void readFully(byte b[]) throws IOException;
+    public final void readFully(byte b[], int off, int len) throws IOException;
+    public int skipBytes(int n) throws IOException;
+    public final boolean readBoolean() throws IOException;
+    public final byte readByte() throws IOException;
+    public final int readUnsignedByte() throws IOException;
+    public final short readShort() throws IOException;
+    public final int readUnsignedShort() throws IOException;
+    public final char readChar() throws IOException;
+    public final int readInt() throws IOException;
+    public final long readLong() throws IOException;
+    public final float readFloat() throws IOException;
+    public final double readDouble() throws IOException;
+    public final String readLine() throws IOException;
+    public final String readUTF() throws IOException;
+
+    //DataOutput interface
+    public void write(int b) throws IOException;
+    public void write(byte b[]) throws IOException;
+    public void write(byte b[], int off, int len) throws IOException;
+    public final void writeBoolean(boolean v) throws IOException;
+    public final void writeByte(int v) throws IOException;
+    public final void writeShort(int v) throws IOException;
+    public final void writeChar(int v) throws IOException;
+    public final void writeInt(int v) throws IOException;
+    public final void writeLong(long v) throws IOException;
+    public final void writeFloat(float v) throws IOException;
+    public final void writeDouble(double v) throws IOException;
+    public final void writeBytes(String s) throws IOException;
+    public final void writeChars(String s) throws IOException;
+    public final void writeUTF(String str) throws IOException;
+}
+
+————————————————————————————
+
+例1：下面的程序说明向文件中写出数据的方法
+
+//RandomTest.java
+import java.io.*;
+class RandomTest 
+{
+    public static void main(String[] args) 
+    {
+        RandomAccessFile raf = null;
+        if (args.length != 1) 
+        {
+            System.err.println("Usage: java RandomTest <output file>");
+            System.exit(-1);
+        }
+        try 
+        {
+            raf = new RandomAccessFile(args[0], "rw");
+            char a = 'a';
+            byte b = 2;
+            String c = "abc";
+            byte[] b2 = {'a', 'b', 'c'};
+            raf.write(b);	//02
+            raf.write(b2, 0, b2.length);//61 62 63
+            raf.writeBoolean(true);//01
+            raf.writeChar(a);//00 61
+            raf.writeBytes(c);//61 62 63
+            raf.writeChars(c);//00 61 00 62 00 63
+            raf.writeUTF(c);//00 03 61 62 63
+            raf.writeUTF("abc\n");//00 04 61 62 63 0a
+            System.out.println("Length of file: " + raf.length());
+        } 
+        catch (IOException e) 
+        {
+            System.err.println(e);
+        } 
+        finally 
+        {
+            try 
+            {
+                raf.close();
+            }
+            catch (Exception e) 
+            { 
+                System.err.println(e);
+            }
+        }
+    }
+}
+
+运行程序：
+java RandomTest output
+结果：
+Length of file: 27
+ 
+output文件包含的内容用十六进制表示为：
+02 61 62 63 01 00 61 61 62 63 00 61 00 62 00 63 00 03 61 62 63 00 04 61 62 63 0a
+
+————————————————————————————
+
+例2：下面的程序把一个文件复制成另一个文件。
+
+//RandCopy.java
+import java.io.*;
+class RandCopy 
+{
+    public static void main(String args[]) 
+    {
+        RandomAccessFile raf1 = null, raf2 = null;
+        long fileSize = -1;
+        byte[] buffer;
+        if(args.length != 2) 
+        {
+            System.out.println("Usage: java RandCopy <file1><file2>");
+            System.exit(0);
+        }
+        if(args[0].equals(args[1])) 
+        {
+            System.out.println(args[0]);
+            System.out.println("File cannot copied onto itself!");
+            System.exit(-1);
+        }
+        try 
+        {
+            raf1 = new RandomAccessFile(new File(args[0]), "r");
+            //其中raf1表示原文件，以只读方式打开， 
+            fileSize = raf1.length();//获得原文件的长度
+        } 
+        catch (IOException e) 
+        {
+            System.out.println("Cannot find " + args[0]);
+            System.exit(-1);
+        }
+        try 
+        {
+            raf2 = new RandomAccessFile(new File(args[1]), "rw");
+            // raf2表示新复制文件，以读写方式打开
+        } 
+        catch (IOException e) 
+        {
+            System.out.println("Cannot open " + args[1]);
+            System.exit(-1);
+        }
+        buffer = new byte[(int)fileSize];
+        try 
+        {
+            raf1.readFully(buffer, 0, (int) fileSize);
+            //一次把所有数据读入内存
+            raf2.write(buffer, 0, (int) fileSize);
+            //全部写出到新文件中
+        } 
+        catch(IOException e) 
+        {
+            System.out.println("Cannot copy file " + args[0] + "to " + args[1]);
+        } 
+        finally 
+        {
+            try 
+           {
+               raf1.close();
+               raf2.close();
+            } 
+            catch(Exception e) 
+            {
+                System.err.println(e);
+            }
+        }
+    }
+} 
+
+——————————————————————————————
+——————————————————————————————
+
+6.2.3抽象流类
+
+1．InputStream类
+InputStream类的定义如下：
+public abstract class InputStream extends Object 
+{
+    public InputStream();
+    
+    public abstract int read() throws IOException;
+    public int read(byte b[]) throws IOException ;
+    public int read(byte b[], int off, int len) throws IOException ;
+    public long skip(long n) throws IOException ;
+    public int available() throws IOException ;
+    public void close() throws IOException ;
+    public synchronized void mark(int readlimit) ;
+    public synchronized void reset() throws IOException ;
+    public boolean markSupported() ;
+}
+
+——————————————————————————
+
+2．OutputStream类
+与输入流类相对应的另一个抽象类是OutputStream类，它定义了与输出操作有关的方法，其定义如下：
+public abstract class OutputStream extends Object 
+{
+    public OutputStream();
+
+    public abstract void write(int b) throws IOException;
+    public void write(byte b[]) throws IOException;
+    public void write(byte b[], int off, int len) throws IOException;
+    public void flush() throws IOException;
+    public void close() throws IOException;
+}
+
+————————————————————————————
+————————————————————————————
+
+6.2.4文件输入输出流类
+
+1．FileInputStream类
+FileInputStream类提供从文件中读入数据的方法，其定义为：
+public class FileInputStream extends InputStream 
+{
+    public FileInputStream(String name) throws FileNotFoundException;
+    public FileInputStream(File file) throws FileNotFoundException;
+    public FileInputStream(FileDescriptor fdObj);
+
+    public int read() throws IOException;
+    public int read(byte b[]) throws IOException;
+    public int read(byte b[], int off, int len) throws IOException;
+    public long skip(long n) throws IOException;
+    // 使文件的读入指针向前或向后移动n个字节，其参数值相对于当前文件指针         
+    public int available() throws IOException;
+    //返回文件输入流中可供读入的字节数，实际上就是文件的长度。 
+    public void close() throws IOException;
+    public final FileDescriptor getFD() throws IOException;
+    protected void finalize() throws IOException;
+}
+
+————————————————————————————————
+
+例子：下面的程序说明FileInputStream类的使用方法。程序实现类似MS-DOS操作系统中type命令，用于显示文件内容。
+
+//FileType.java
+import java.io.*;
+class FileType 
+{
+    public static void main(String[] args) 
+    {
+        if (args.length != 1) 
+        {
+            System.err.println("Usage: java FileType <input_file>");
+            System.exit(-1);
+        }
+        File file = new File(args[0]);
+        try 
+        {
+            FileInputStream in = new FileInputStream(file);
+            int c;
+            int i = 0;
+            while ((c = in.read()) > -1) 
+            {
+                if((char)c == '\n')   i++; //统计行数
+                System.out.print((char)c);
+            }
+            in.close();
+            System.out.flush();
+            System.out.println("\n\n\n----------------");
+            System.out.println("File " + args[0] + " Lines: " + i);
+        } 
+        catch (FileNotFoundException e) 
+        {
+            System.err.println(file + " is not found");
+        } 
+        catch (IOException e) 
+        {
+            e.printStackTrace();
+        }
+    }
+}
+     
+程序在生成FileInputStream对象时，用File对象给出文件名，虽然比用字符串给出文件名稍麻烦点，
+但这种方法使应用程序独立于平台，是一种良好的设计习惯。
+
+程序在显示文件内容时使用了System.out.print()方法，而不是以前程序中常用的方法System.out.println()。
+
+两者的区别是：println()执行时，立即把字符显示在屏幕上，并且每次调用println()方法，它总是在新的一行输出数据。
+print()执行时，并不立即显示数据，而把数据缓存在输出流中，直到遇到新行字符'\n'或执行了flush()方法后，才使字符显示在屏幕上。
+如果程序中使用println()，那么在屏幕上的显示情况就是一行一个字符，不是原来文件的行格式。
+
+————————————————————————————————
+
+2．FileOutputStream类
+FileOutputStream类提供把数据写出到文件中的方法，其定义为：
+public class FileOutputStream extends OutputStream 
+{
+    public FileOutputStream(String name) throws IOException;
+    public FileOutputStream(String name, boolean append) throws IOException;
+    public FileOutputStream(File file) throws IOException;
+    public FileOutputStream(FileDescriptor fdObj);
+
+    public void write(int b) throws IOException;
+    public void write(byte b[]) throws IOException;
+    public void write(byte b[], int off, int len) throws IOException;
+    public void close() throws IOException;
+    public final FileDescriptor getFD()  throws IOException;
+}
+
+————————————————————————————————
+————————————————————————————————
+
+6.2.6其它输入输出流类
+
+1．SequenceInputStream类
+SequenceInputStream类可以将两个或几个输入流不露痕迹地接合在一起，生成一个长长的接合流，在读入数据时，
+它忽略前面几个输入流的结束符EOF，直到最后一个流的结束符EOF时，才完成流的输入，其定义如下：
+public class SequenceInputStream extends InputStream 
+{
+    public SequenceInputStream(Enumeration e);
+    //能够接合任意多个输入流
+    public SequenceInputStream(InputStream s1, InputStream s2);
+    只能接合两个输入流。
+
+    public int read() throws IOException;
+    public int read(byte buf[], int pos, int len) throws IOException;
+    public int available() throws IOException;
+    public void close() throws IOException;
+}
+
+————————————————————————————————
+
+例子：下面程序把两个文件输入流接合成一个SequenceInputStream流，再写到一个文件中。
+//SeqTest.java
+import java.io.*;
+class SeqTest 
+{
+    public static void main(String[] args) 
+    {
+        FileInputStream fis1 = null;
+        FileInputStream fis2 = null;
+        FileOutputStream fos = null;
+        SequenceInputStream  sis =null;
+        int ch;
+        if(args.length != 3) 
+        { 
+            System.out.println("Usage: java SeqTest <file1><file2><outfile>");
+            System.exit(0);
+        }
+        try 
+        {
+            fis1 = new FileInputStream(new File(args[0]));
+            fis2 = new FileInputStream(new File(args[1]));
+            fos = new FileOutputStream(new File(args[2]));
+        } 
+        catch (IOException e) 
+        {
+            System.out.println("Cannot find file!");
+            System.exit(-1);
+        }
+        sis = new SequenceInputStream(fis1, fis2);
+        try 
+        {
+            while((ch = sis.read()) > -1)  fos.write(ch);
+            fis1.close();
+            fis2.close();
+            sis.close();
+        } 
+        catch (IOException e) 
+        {
+            System.out.println(e);
+            System.exit(-1);
+        }
+    }
+}
+
+
+————————————————————————————————
+
+2．管道输入输出流类
+Java使用了管道技术，用PipedInputStream类和PipedOutputStream类实现管道操作，这两个类必须同时使用，它们的定义分别为：
+public class PipedInputStream extends InputStream 
+{
+    public PipedInputStream(PipedOutputStream src) throws IOException;
+    public PipedInputStream();
+
+    public synchronized int read()  throws IOException;
+    public synchronized int read(byte b[], int off, int len)  throws IOException;
+    public synchronized int available() throws IOException;
+    public void close()  throws IOException;
+    public void connect(PipedOutputStream src) throws IOException;
+}
+
+public class PipedOutputStream extends OutputStream 
+{
+    public PipedOutputStream(PipedInputStream snk)  throws IOException;
+    public PipedOutputStream();
+
+    public void write(int b)  throws IOException;
+    public void write(byte b[], int off, int len) throws IOException;
+    public synchronized void flush() throws IOException;
+    public void close()  throws IOException;
+    public void connect(PipedInputStream snk) throws IOException;
+}
+
+
+——————————————————————————————
+
+
+例子：下面的程序使用两个线程：一个线程模拟数据采集，用Random类随机生成数值，另一个线程模拟数据处理，使用数据，计算其平均值。
+
+//PipeTest.java
+import java.io.*;
+import java.util.Random;
+//数据处理
+class RunningAverage extends Thread 
+{
+    private DataInputStream in;
+    double total = 0;
+    long count = 0;
+    RunningAverage(InputStream i) 
+    {
+        in = new DataInputStream(i);
+    }
+    public void run() 
+    {
+        while (true) 
+        {
+            try 
+            {
+                double num = in.readDouble();
+                total += num;
+                count++;
+                System.out.println(count + ": " + num + "\t avg = "+ total/count);
+            } 
+            catch (IOException e) 
+            {
+                e.printStackTrace();
+            }
+        }
+    }
+}
+//数据采集
+class NumberGenerator extends Thread 
+{
+    private DataOutputStream out;
+    private Random gen = new Random();
+    private final long RANGE = 1000;
+    NumberGenerator(OutputStream o) 
+    {
+        out = new DataOutputStream(o);
+    }
+    public void run() 
+    {
+        while (true) 
+        {
+            try 
+            {
+                double num = gen.nextDouble() * RANGE;
+                out.writeDouble(num);
+                out.flush();
+                sleep(500);
+            } 
+            catch (IOException e) 
+            {
+                e.printStackTrace();
+            }  
+            catch (InterruptedException e) 
+            {
+                e.printStackTrace();
+            }
+        }
+    }
+}
+//主类
+class PipeTest 
+{
+    public static void main(String[] args) 
+    {
+        try 
+        {
+            PipedOutputStream producer = new PipedOutputStream();
+            PipedInputStream consumer = new PipedInputStream(producer);
+            RunningAverage avg = new RunningAverage(consumer);
+            NumberGenerator gen = new NumberGenerator(producer);
+            gen.start();
+            avg.start();
+            try
+            {
+                Thread.sleep(5000);
+            }
+            catch (InterruptedException e) {}
+            gen.stop();
+            avg.stop();
+            producer.close();
+            consumer.close();
+        } 
+        catch (IOException e) 
+        {
+            e.printStackTrace();
+        }
+    }
+}
+
+程序用PipedOutputStream()生成管道输出流producer，用PipedInputStream(producer)生成管道输入流consumer，
+同时实现了两个管道的连接。
+程序中的两个类RunningAverage和NumberGenerator，都是Thread类的子类，是两个不同的线程。前一个类生成数据，
+用管道输出这些数据，后一个类从输入管道接收数据，然后计算平均值。main()在启动了这两个线程工作后，睡眠5秒钟，
+然后stop()两个线程，再close()管道输入输出流而结束程序。
+
+__________________________________________
+__________________________________________
+
+
+6.3网络编程
+
+6.3.1 InetAddress
+ 
+例1：TestAdd.java
+import java.net.*; 
+import java.io.*;
+public class TestAdd 
+{ 
+    public static void main(String args[])
+    {
+        try
+        {
+            if(args.length==1)
+            {
+                InetAddress ipa=InetAddress.getByName(args[0]);
+                System.out.println("Host name:"+ipa.getHostName());
+                //获取主机名
+                System.out.println("Host Address:"+ipa.getHostAddress());
+                //获取IP地址
+                System.out.println("Host IP Address:"+ipa.toString());
+                //获取主机名/IP地址
+                System.out.println("Local Host:"+InetAddress.getLocalHost());
+                String s=ipa.isMulticastAddress()? " Yes" : " No";
+                System.out.println("is MuticastAddress:"+s);
+                byte[] addr=ipa.getAddress();
+                System.out.println("Use getAddress():"+addr[0]+"."+addr[1]+"."+addr[2]+"."+addr[3]);
+                System.out.println("Converted getAddress():"+(addr[0]&0XFF)+"."+(addr[1]&0XFF)+"."+(addr[2]&0XFF)+"."+(addr[3]&0XFF));
+            }
+            else 
+                System.out.println("Please enter a hostname:");
+        }
+        catch(UnknownHostException e)
+        {
+            e.printStackTrace();
+        }
+    }
+}	
+
+_____________________________________________________
+_____________________________________________________
+
+6.3.2 Socket类和ServerSocket类
+
+//客户端程序ClientTest.java
+import java.io.*;
+import java.net.*;
+public class ClientTest 
+{
+    public static void main(String[] args) 
+    {
+        try 
+        {
+            String s;
+            String line="";
+            Socket mySocket = new Socket(InetAddress.getLocalHost(),800);
+            PrintStream os = new PrintStream( new BufferedOutputStream(mySocket.getOutputStream()));
+            DataInputStream dis = new DataInputStream(mySocket.getInputStream());
+            s = dis.readLine();//从Server端读入的数据
+            System.out.println(s);                 
+            BufferedReader in = new BufferedReader(new InputStreamReader(System.in));
+            line = in.readLine();
+            while(!line.equals("Bye"))
+            {
+                os.println(line);
+                os.flush();
+                line = in.readLine();               	
+            }
+            os.close();
+            dis.close();
+            mySocket.close();                    
+        }
+       
+        catch (IOException e) 
+        {
+            System.out.println("ClientException"+e);
+        } 
+    }
+}
+
+————————————————————————————
+
+//服务器端程序ServerTest.java
+import java.io.*;
+import java.net.*;
+public class ServerTest 
+{
+    public static void main(String[] args) 
+    {
+        try 
+        {
+            boolean flag = true;
+            Socket linkSocket = null;
+            String inputLine;
+            ServerSocket myServer = new ServerSocket(800);
+            System.out.println("Server listen on:"+myServer.getLocalPort());
+            while(flag)
+            {
+                linkSocket = myServer.accept();
+                DataInputStream dis = new DataInputStream(new BufferedInputStream(linkSocket.getInputStream()));
+                //获得从Client读入的数据流
+                PrintStream ps = new PrintStream(new BufferedOutputStream(linkSocket.getOutputStream()));
+                //获得向Client输出的数据流
+                ps.println("Hello! Wellcome connect to my server!");
+                ps.flush();//向Client端输出信息
+                inputLine = dis.readLine();//从Client读入信息
+                while(!inputLine.equals("Bye"))
+                {
+                    System.out.println("Client端输入的信息为："+inputLine);
+                    inputLine = dis.readLine();   
+                }
+                ps.close();
+                dis.close();
+                linkSocket.close();  	
+                myServer.close();            
+            }
+        } 
+        catch (IOException e) 
+        {
+            System.out.println("ServerException"+e);
+        } 
+    }
+} 
+
+————————————————————————————
+
+//多线程服务器端程序ServerMulti.java
+import java.io.*;
+import java.net.*;
+public class ServerMulti
+{
+    ServerMulti()
+    {
+        try 
+        {
+            boolean flag = true;
+            Socket links = null;
+            ServerSocket myServer = new ServerSocket(800);
+            System.out.println("Server listen on:"+myServer.getLocalPort());
+            while(flag)
+            {
+                links = myServer.accept();
+                ServiceThread myST = new ServiceThread(links);
+                myST.start();
+            }
+        } 
+        catch (IOException e) 
+        {
+            System.out.println("ServerException"+e);
+        }  
+    }
+    public static void main(String[] args) 
+    {
+        new ServerMulti();
+    }
+}    
+class ServiceThread extends Thread
+{     
+    Socket linkSocket;
+    String inputLine;
+    public ServiceThread(Socket ls)
+    {
+        linkSocket = ls;      
+    }
+    public void run()
+    {
+        try
+        {
+            DataInputStream dis = new DataInputStream(new BufferedInputStream(linkSocket.getInputStream()));
+            PrintStream ps = new PrintStream(new BufferedOutputStream(linkSocket.getOutputStream()));
+            ps.println("Hello! Wellcome connect to my server!");
+            ps.flush();//向Client端输出信息
+            inputLine = dis.readLine();//从Client读入信息
+            while(!inputLine.equals("Bye"))
+            {
+                System.out.println("Client端输入的信息为："+inputLine);
+                inputLine = dis.readLine();   
+            }
+            ps.close();
+            dis.close();
+            linkSocket.close();
+        }
+        catch (IOException e) 
+        {
+            System.out.println("ServerException"+e);
+        } 
+    }
+}
+
+___________________________________________________
+___________________________________________________
+
+//UDP服务器端程序UDPServer .java
+import java.io.*; 
+import java.net.*; 
+class UDPServer 
+{ 
+    public static void main(String args[]) throws Exception 
+    { 
+        DatagramSocket serverSocket = new DatagramSocket(9876); 
+        byte[] receiveData = new byte[1024]; 
+        byte[] sendData  = new byte[1024]; 
+        while(true) 
+        { 
+            DatagramPacket receivePacket = 
+            new DatagramPacket(receiveData, receiveData.length); 
+            serverSocket.receive(receivePacket); 
+            String sentence = new String(receivePacket.getData()); 
+            InetAddress IPAddress = receivePacket.getAddress(); 
+            int port = receivePacket.getPort(); 
+            String capitalizedSentence = sentence.toUpperCase(); 
+            sendData = capitalizedSentence.getBytes(); 
+            DatagramPacket sendPacket = new DatagramPacket(sendData, sendData.length, IPAddress, port); 
+            serverSocket.send(sendPacket); 
+        }
+    } 
+} 
+
+___________________________________________________
+
+UDP客户端程序UDPClient.java
+import java.io.*; 
+import java.net.*; 
+class UDPClient 
+{ 
+    public static void main(String args[]) throws Exception 
+    { 
+        BufferedReader inFromUser = 
+        new BufferedReader(new InputStreamReader(System.in)); 
+        DatagramSocket clientSocket = new DatagramSocket(); 
+        byte[] sendData = new byte[1024]; 
+        byte[] receiveData = new byte[1024]; 
+        String sentence = inFromUser.readLine(); 
+        sendData = sentence.getBytes();         
+        DatagramPacket sendPacket = 
+            new DatagramPacket(sendData, sendData.length,InetAddress.getLocalHost(), 9876); 
+        clientSocket.send(sendPacket); 
+        DatagramPacket receivePacket = 
+            new DatagramPacket(receiveData, receiveData.length); 
+        clientSocket.receive(receivePacket); 
+        String modifiedSentence = 
+            new String(receivePacket.getData()); 
+        System.out.println("FROM SERVER:" + modifiedSentence); 
+        clientSocket.close(); 
+    } 
+} 
